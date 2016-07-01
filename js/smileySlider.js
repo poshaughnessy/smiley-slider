@@ -15,6 +15,7 @@ function SmileySlider(container) {
   let height = window.innerHeight;
   let smileCurve;
   let smileLine;
+  let touchStartY = null;
 
   init();
   animate();
@@ -33,15 +34,19 @@ function SmileySlider(container) {
 
     let eye1Geo = new THREE.CircleGeometry( 10, 10 );
     let eye1Mat = new THREE.MeshBasicMaterial({color: 0x000000});
+    eye1Mat.side = THREE.DoubleSide;
     eye1Mesh = new THREE.Mesh(eye1Geo, eye1Mat);
-    eye1Mesh.position.set(-50, 50, 10);
-    scene.add(eye1Mesh);
+    eye1Mesh.position.set(-50, 30, -30);
+    eye1Mesh.rotation.x += Math.PI / 2;
+    faceMesh.add(eye1Mesh);
 
     let eye2Geo = new THREE.CircleGeometry( 10, 10 );
     let eye2Mat = new THREE.MeshBasicMaterial({color: 0x000000});
+    eye2Mat.side = THREE.DoubleSide;
     eye2Mesh = new THREE.Mesh(eye2Geo, eye2Mat);
-    eye2Mesh.position.set(50, 50, 10);
-    scene.add(eye2Mesh);
+    eye2Mesh.position.set(50, 30, -30);
+    eye2Mesh.rotation.x += Math.PI / 2;
+    faceMesh.add(eye2Mesh);
 
     initSmile();
 
@@ -53,23 +58,56 @@ function SmileySlider(container) {
 
     container.appendChild( renderer.domElement );
 
+    initControls();
+
   }
 
   function initSmile() {
 
     let smileGeo = new THREE.Geometry();
     smileCurve = new THREE.QuadraticBezierCurve3();
-    smileCurve.v0 = new THREE.Vector3(-100, -50, 10);
-    smileCurve.v1 = new THREE.Vector3(0, -150, 10);
-    smileCurve.v2 = new THREE.Vector3(100, -50, 10);
+    smileCurve.v0 = new THREE.Vector3(-100, 10, 50);
+    smileCurve.v1 = new THREE.Vector3(0, 10, 150);
+    smileCurve.v2 = new THREE.Vector3(100, 10, 50);
     for (let j = 0; j < 20; j++) {
       smileGeo.vertices.push( smileCurve.getPoint(j / 20) )
     }
 
-    let smileMat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 2 } );
+    let smileMat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 10 } );
     smileLine = new THREE.Line(smileGeo, smileMat);
-    scene.add(smileLine);
+    faceMesh.add(smileLine);
 
+  }
+
+  function initControls() {
+
+    container.addEventListener( 'touchstart', onTouchStart, false );
+    container.addEventListener( 'touchmove', onTouchMove, false );
+    container.addEventListener( 'touchend', onTouchEnd, false );
+
+  }
+
+  function onTouchStart(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('start', event);
+    touchStartY = event.touches[0].clientY;
+  }
+
+  function onTouchMove(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('move', event);
+    let deltaY = (event.touches[0].clientY - touchStartY) / 500;
+    //let rotX = Math.min( deltaY, Math.PI / 6 );
+    //rotX = Math.max( rotX, -Math.PI / 6 );
+    //faceMesh.rotation.x = Math.PI / 2 + rotX;
+    faceMesh.rotation.x = Math.PI / 2 + deltaY;
+  }
+
+  function onTouchEnd(event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   function animate() {
