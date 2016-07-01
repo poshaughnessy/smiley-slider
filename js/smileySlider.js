@@ -13,7 +13,10 @@ function SmileySlider(container) {
   let eye2Mesh;
   let width = window.innerWidth;
   let height = window.innerHeight;
-  let smileCurve;
+  let smileCurveSad;
+  let smileCurveHappy;
+  let smileGeoSad;
+  let smileGeoHappy;
   let smileLine;
   let touchStartY = null;
 
@@ -64,17 +67,32 @@ function SmileySlider(container) {
 
   function initSmile() {
 
-    let smileGeo = new THREE.Geometry();
-    smileCurve = new THREE.QuadraticBezierCurve3();
-    smileCurve.v0 = new THREE.Vector3(-100, 10, 50);
-    smileCurve.v1 = new THREE.Vector3(0, 10, 150);
-    smileCurve.v2 = new THREE.Vector3(100, 10, 50);
+    smileGeoSad = new THREE.Geometry();
+    smileGeoHappy = new THREE.Geometry();
+
+    smileCurveSad = new THREE.QuadraticBezierCurve3();
+    smileCurveSad.v0 = new THREE.Vector3(-100, 10, 150);
+    smileCurveSad.v1 = new THREE.Vector3(0, 10, 50);
+    smileCurveSad.v2 = new THREE.Vector3(100, 10, 150);
+
+    smileCurveHappy = new THREE.QuadraticBezierCurve3();
+    smileCurveHappy.v0 = new THREE.Vector3(-100, 10, 50);
+    smileCurveHappy.v1 = new THREE.Vector3(0, 10, 150);
+    smileCurveHappy.v2 = new THREE.Vector3(100, 10, 50);
+
     for (let j = 0; j < 20; j++) {
-      smileGeo.vertices.push( smileCurve.getPoint(j / 20) )
+      smileGeoSad.vertices.push( smileCurveSad.getPoint(j / 20) );
+    }
+
+    for (let j = 0; j < 20; j++) {
+      smileGeoHappy.vertices.push( smileCurveHappy.getPoint(j / 20) );
     }
 
     let smileMat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 10 } );
-    smileLine = new THREE.Line(smileGeo, smileMat);
+    smileLine = new THREE.Line(smileGeoSad, smileMat);
+
+    tweenBetweenGeometries(smileLine, smileGeoSad, smileGeoHappy, 0.5, false);
+
     faceMesh.add(smileLine);
 
   }
@@ -98,11 +116,18 @@ function SmileySlider(container) {
     event.preventDefault();
     event.stopPropagation();
     console.log('move', event);
+
+    // Rotate face
     let deltaY = (event.touches[0].clientY - touchStartY) / 500;
-    //let rotX = Math.min( deltaY, Math.PI / 6 );
-    //rotX = Math.max( rotX, -Math.PI / 6 );
-    //faceMesh.rotation.x = Math.PI / 2 + rotX;
-    faceMesh.rotation.x = Math.PI / 2 + deltaY;
+    let rotX = Math.min( deltaY, Math.PI / 6 );
+    rotX = Math.max( rotX, -Math.PI / 6 );
+    faceMesh.rotation.x = Math.PI / 2 + rotX;
+
+    // Morph smile
+    tweenBetweenGeometries(smileLine, smileGeoSad, smileGeoHappy, 0.5, false);
+    //console.log(smileGeo.vertices[1]);
+    //smileGeo.verticesNeedUpdate = true;
+
   }
 
   function onTouchEnd(event) {
@@ -111,12 +136,32 @@ function SmileySlider(container) {
   }
 
   function animate() {
-
     requestAnimationFrame( animate );
-
-    //mesh.rotation.x += 0.01;
-
     renderer.render( scene, camera );
+  }
+
+  /**
+   * Thanks to: http://jsdo.it/zz85/rVta
+   * amount is between 0 and 1
+   */
+  function tweenBetweenGeometries( mesh, from, to, amount ) {
+
+    var tmp = new THREE.Vector3(),
+      len = from.vertices.length,
+      i;
+
+    for( i = 0; i < len; i ++ ) {
+
+      tmp.copy( to.vertices[i] )
+        .sub( from.vertices[i] )
+        .multiplyScalar( amount )
+        .add( from.vertices[i] );
+
+      mesh.geometry.vertices[i].copy(tmp);
+
+    }
+
+    mesh.geometry.verticesNeedUpdate = true;
 
   }
 
